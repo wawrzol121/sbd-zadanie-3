@@ -1,0 +1,147 @@
+WHERE AND OR ORDER BY
+SELECT * FROM `customers` WHERE `country`="Germany";
+SELECT * FROM `customers` WHERE `city`="Berlin";
+SELECT * FROM `customers` WHERE `city`="Berlin" AND `country`="Germany";
+SELECT * FROM `customers` WHERE (`city`="Berlin" OR `city`="München") AND `country`="Germany";
+SELECT * FROM `customers` WHERE NOT `country`="USA" OR NOT `country`="Germany";
+SELECT * FROM `customers` WHERE 1 ORDER BY `country` ASC;
+SELECT * FROM `customers` WHERE 1 ORDER BY `country` DESC;
+SELECT * FROM `customers` WHERE 1 ORDER BY `country` DESC, `customer_name` ASC;
+
+
+MIN MAX COUNT AVG SUM GROUP BY
+SELECT MIN(`price`) FROM `products` WHERE 1;
+SELECT MAX(`price`) FROM `products` WHERE 1;
+SELECT count(*) FROM `products` WHERE 1;
+SELECT count(*) FROM `customers` WHERE 1;
+SELECT count(*) FROM `customers` GROUP BY `country`;
+SELECT COUNT(*), AVG(`price`) FROM `products` WHERE `category_id`=1;
+SELECT SUM(`price`) FROM `products` WHERE `category_id`=2;
+SELECT MAX(`price`) FROM `products` GROUP BY `category_id`;
+
+BETWEEN, NOT BETWEEN, IN, NOT IN, SUBQUERY
+SELECT * FROM `products` WHERE `price` BETWEEN 10 AND 20;
+SELECT * FROM `products` WHERE `price` NOT BETWEEN 10 AND 20;
+SELECT * FROM `products` WHERE `category_id` IN (1, 2, 3);
+SELECT * FROM `orders` WHERE `shipper_id` IN (1, 2, 3);
+SELECT * FROM `products` WHERE `price` BETWEEN 10 AND 15 AND NOT `category_id` IN (1, 2, 3, 4);
+SELECT * FROM `orders` WHERE `order_date` BETWEEN '1996-7-01 00:00:00' AND '1996-7-31 00:00:00';
+SELECT * FROM `orders` WHERE `customer_id` IN (SELECT `id` FROM `customers` WHERE `id` BETWEEN 77 AND 90);
+
+JOIN, INNER JOIN, LEFT JOIN, RIGHT JOIN, Self Join
+SELECTcu.id AS `Customer id`,cu.customer_name AS `Customer name`,cu.contact_name AS `Contact name`,cu.address AS `Address`,cu.city AS `City`,cu.post_code AS `Post code`,cu.country AS `Country`,pr.name AS `Product name`,pr.price AS `Price of product`,ord.quantity AS `Quantity`
+FROM `customers` AS `cu`
+JOIN `orders` AS `or`
+ON or.customer_id = cu.id
+JOIN `orders_details` AS `ord`
+ON ord.order_id = or.id
+JOIN `products` AS `pr`
+ON od.product_id = pr.id
+WHERE 1;
+
+SELECT cu.id AS `Customer id`,cu.customer_name AS `Customer name`,cu.contact_name AS `Contact name`,cu.address AS `Address`,cu.city AS `City`,cu.post_code AS `Post code`,cu.country AS `Country`,
+COUNT(o.id) AS `Orders made`
+FROM `customers` AS `cu`
+LEFT JOIN orders AS `or`
+ON o.customer_id = cu.id
+WHERE 1;
+GROUP BY cu.id
+
+SELECT cu.id AS `Customer id`,cu.customer_name AS `Customer name`,cu.contact_name AS `Contact name`,cu.address AS `Address`,cu.city AS `City`,cu.post_code AS `Post code`,cu.country AS `Country`
+FROM `customers` AS `cu`
+JOIN orders AS `or`
+ON or.customer_id = cu.id
+WHERE 1;
+GROUP BY cu.id
+
+SELECT em.id,em.first_name,em.last_name,or.id,or.customer_id,or.employee_id,or.order_date,or.shipper_id
+FROM `employees` AS `em`
+RIGHT JOIN `orders` AS `or`
+ON or.employee_id = em.id
+WHERE 1;
+
+SELECT cu1.customer_name AS `Customer 1 name`,cu2.customer_name AS `Customer 2 name`,cu1.city AS `City`
+FROM customers cu1, customers cu2
+WHERE cu1.id <> cu2.id AND cu1.City = cu2.City;
+
+LIMIT, OFFSET
+SELECT `id`, `customer_id`, `employee_id`, `order_date`, `shipper_id` 
+FROM `orders` 
+ORDER BY `id` DESC LIMIT 10;
+
+SELECT `id`, `customer_id`, `employee_id`, `order_date`, `shipper_id` 
+FROM `orders` LIMIT 10 OFFSET 10;
+
+HAVING , EXISTS
+SELECT COUNT(`id`), `country` 
+FROM customers GROUP BY `country` HAVING COUNT(`id`) > 5;
+
+SELECT c.customer_name, COUNT(c.id) 
+FROM `customers` as c JOIN orders as o ON o.customer_id = c.id GROUP By c.id HAVING COUNT(c.id) > 2 and COUNT(c.id) < 4;
+
+SELECT e.first_name, e.last_name, COUNT(o.id) 
+FROM `employees` as e JOIN orders as o ON o.employee_id = e.id GROUP By e.id HAVING COUNT(o.id) > 10;
+
+
+SELECT e.last_name, EXISTS(SELECT COUNT(o.id) 
+FROM orders as o WHERE o.employee_id = e.id HAVING COUNT(o.id)) FROM `employees` as e WHERE e.last_name="Davolio" OR e.last_name="Fuller";
+
+SELECT `id`, `name`, `contact_name`, `address`, `city`, `post_code`, `country`, `phone` 
+FROM `suppliers` as s WHERE EXISTS( SELECT p.id FROM products as p WHERE p.price < 20 AND p.supplier_id = s.id );
+
+SELECT `id`, `name`, `contact_name`, `address`, `city`, `post_code`, `country`, `phone` 
+FROM `suppliers` as s WHERE EXISTS( SELECT p.id FROM products as p WHERE p.price = 22 AND p.supplier_id = s.id );
+
+CASE
+SELECT o.id, o.quantity,
+CASE
+WHEN o.quantity > 30 THEN 'jest większa niż 30'
+WHEN o.quantity < 30 THEN 'jest mniejsza niż 30'
+ELSE 'Liczba sztuk jest równa 30'
+END AS ilosc
+FROM orders_details as o;
+SELECT c.customer_name, c.city, c.country 
+FROM customers as c ORDER BY CASE WHEN c.city = NULL THEN c.country ELSE c.city END;
+
+ALL
+SELECT pr.id,pr.name,SUM(o.quantity) AS suma
+FROM products AS pr
+JOIN orders_details AS or
+ON or.product_id = pr.id
+GROUP BY pr.id
+ORDER BY suma
+DESC LIMIT 10;
+
+SELECT cu.id, cu.customer_name,
+COUNT(d.quantity) AS liczbaZamowien,
+SUM(d.quantity) AS sumaZamowionychRzeczy
+FROM customers AS cu
+JOIN orders AS or
+ON or.customer_id = c.id
+JOIN orders_details AS ord
+ON or.id = ord.order_id
+GROUP BY cu.id
+ORDER BY sumaZamowionychRzeczy
+DESC LIMIT 10;
+
+SELECT c.id,c.category_name,
+SUM(d.quantity) AS ilosc
+FROM categories AS ca
+JOIN products AS pr
+ON
+    pr.category_id = ca.id
+JOIN orders_details AS ord
+ON ord.product_id = pr.id
+GROUP BY ca.id
+ORDER BY ilosc
+DESC LIMIT 1;
+
+SELECT ca.id,ca.category_name,
+SUM(d.quantity) AS ilosc
+FROM categories AS ca
+JOIN products AS pr
+ON pr.category_id = ca.id
+JOIN orders_details AS ord
+ON
+    ord.product_id = pr.id
+GROUP BY ca.id
